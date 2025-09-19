@@ -4,8 +4,7 @@ import { getAnalytics } from "firebase/analytics";
 import { getAuth } from "firebase/auth";
 import { getDatabase } from "firebase/database";
 
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+// تهيئة Firebase - باستخدام بيانات التهيئة الجديدة
 const firebaseConfig = {
   apiKey: "AIzaSyAzYZMxqNmnLMGYnCyiJYPg2MbxZMt0co0",
   authDomain: "osama-91b95.firebaseapp.com",
@@ -17,7 +16,7 @@ const firebaseConfig = {
   measurementId: "G-LEM5PVPJZC"
 };
 
-// Initialize Firebase
+// تهيئة Firebase
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 const auth = getAuth(app);
@@ -57,7 +56,8 @@ auth.onAuthStateChanged(user => {
 
 // تحميل المنشورات للجميع
 function loadPosts() {
-    database.ref('posts').on('value', snapshot => {
+    const postsRef = database.ref('posts');
+    postsRef.on('value', snapshot => {
         postsContainer.innerHTML = '';
         
         if (snapshot.exists()) {
@@ -110,7 +110,7 @@ loginBtn.addEventListener('click', e => {
         return;
     }
     
-    auth.signInWithEmailAndPassword(email, password)
+    signInWithEmailAndPassword(auth, email, password)
         .then(() => {
             showAuthMessage('تم تسجيل الدخول بنجاح!', 'success');
             setTimeout(() => {
@@ -138,12 +138,12 @@ signupBtn.addEventListener('click', e => {
         return;
     }
     
-    auth.createUserWithEmailAndPassword(email, password)
+    createUserWithEmailAndPassword(auth, email, password)
         .then(userCredential => {
             const user = userCredential.user;
             
             // حفظ معلومات المستخدم الإضافية
-            return database.ref('users/' + user.uid).set({
+            return set(ref(database, 'users/' + user.uid), {
                 name: name,
                 phone: phone,
                 email: email,
@@ -164,7 +164,7 @@ signupBtn.addEventListener('click', e => {
 
 // تسجيل الخروج
 logoutBtn.addEventListener('click', () => {
-    auth.signOut().then(() => {
+    signOut(auth).then(() => {
         showPage(homePage);
     });
 });
@@ -191,7 +191,7 @@ publishBtn.addEventListener('click', e => {
     }
     
     // الحصول على معلومات المستخدم الإضافية
-    database.ref('users/' + user.uid).once('value')
+    get(ref(database, 'users/' + user.uid))
         .then(snapshot => {
             const userData = snapshot.val();
             
@@ -204,11 +204,11 @@ publishBtn.addEventListener('click', e => {
                 authorId: user.uid,
                 authorName: userData.name,
                 authorPhone: userData.phone,
-                timestamp: firebase.database.ServerValue.TIMESTAMP
+                timestamp: serverTimestamp()
             };
             
             // حفظ المنشور في قاعدة البيانات
-            return database.ref('posts').push(postData);
+            return push(ref(database, 'posts'), postData);
         })
         .then(() => {
             alert('تم نشر المنشور بنجاح!');
@@ -227,7 +227,7 @@ profileIcon.addEventListener('click', () => {
     
     if (user) {
         // عرض صفحة حساب المستخدم
-        database.ref('users/' + user.uid).once('value')
+        get(ref(database, 'users/' + user.uid))
             .then(snapshot => {
                 const userData = snapshot.val();
                 userInfo.innerHTML = `
